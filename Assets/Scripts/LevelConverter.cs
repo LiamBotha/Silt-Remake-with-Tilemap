@@ -22,36 +22,29 @@ public class LevelConverter: MonoBehaviour
 
     [SerializeField] GameObject loadingCanvas = null;
 
+    List<string[]> platformInput;
+    List<string[]> hazardInput;
+    List<string[]> checkpointInput;
+
     Dictionary<string, Tile> tiles;
 
     bool dataLoaded = false;
 
     private void Start()
     {
-        LoadAllTiles();
+        GetAllTilesFromResources();
     }
 
-    public void LoadLevelAndPlay()
+    public void LoadLevelAndPlay(bool reload = false)
     {
         dataLoaded = false;
 
-        LoadFromFile();
+        if (reload)
+            LoadLastFile();
+        else
+            LoadFromFile();
 
         if(dataLoaded)
-        {
-            loadingCanvas.SetActive(false);
-
-            StartCoroutine(LoadPlayerAsync());
-        }
-    }
-
-    public void ReloadLevelAndPlay()
-    {
-        dataLoaded = false;
-
-        LoadLastFile();
-
-        if (dataLoaded)
         {
             loadingCanvas.SetActive(false);
 
@@ -74,7 +67,7 @@ public class LevelConverter: MonoBehaviour
         GameObject.FindObjectOfType<CinemachineConfiner>().m_BoundingShape2D = backgroundTilemap.GetComponent<CompositeCollider2D>();
     }
 
-    public void LoadAllTiles()
+    public void GetAllTilesFromResources()
     {
         tiles = new Dictionary<string, Tile>();
 
@@ -118,7 +111,7 @@ public class LevelConverter: MonoBehaviour
         return output;
     }
 
-    public string ConvertGameobjects()
+    public string ConvertGameObjects()
     {
         string output = "";
 
@@ -148,131 +141,33 @@ public class LevelConverter: MonoBehaviour
         output += "|" + Environment.NewLine;
         output += ConvertTilemap(hazardTilemap);
         output += "|" + Environment.NewLine;
-        output += ConvertGameobjects();
+        output += ConvertGameObjects();
 
-        string filePath = FileEditor.SetFile();
-
-        if(filePath != null)
-        {
-            StreamWriter writer = new StreamWriter(filePath, false);
-            writer.Write(output);
-            writer.Flush();
-            writer.Close();
-
-            Debug.Log("Save Completed");
-        }
+        FileEditor.SaveString(output);
     }
 
     public void LoadLastFile()
     {
-        List<string[]> platformInput = new List<string[]>();
-        List<string[]> hazardInput = new List<string[]>();
-        List<string[]> checkpointInput = new List<string[]>();
-
-        dataLoaded = GetLastData(platformInput, hazardInput, checkpointInput);
+        dataLoaded = FileEditor.GetLastData(out platformInput, out hazardInput, out checkpointInput);
 
         if (dataLoaded)
         {
-            platformTilemap.ClearAllTiles();
-            hazardTilemap.ClearAllTiles();
-
-            var checkpoints = FindObjectsOfType<Checkpoint>();
-            foreach (var c in checkpoints)
-            {
-                Destroy(c.gameObject);
-            }
-
+            ClearMap();
             LoadInTiles(platformInput, hazardInput, checkpointInput);
-
             Debug.Log("Load Completed");
         }
     }
 
     public void LoadFromFile() // TODO - build out method to get all tiletypes procedurally
     {
-        List<string[]> platformInput = new List<string[]>();
-        List<string[]> hazardInput = new List<string[]>();
-        List<string[]> checkpointInput = new List<string[]>();
-
-        dataLoaded = GetDataFromFile(platformInput, hazardInput, checkpointInput);
+        dataLoaded = FileEditor.GetDataFromFile(out platformInput, out hazardInput, out checkpointInput);
 
         if(dataLoaded)
         {
-            platformTilemap.ClearAllTiles();
-            hazardTilemap.ClearAllTiles();
-
-            var checkpoints = FindObjectsOfType<Checkpoint>();
-            foreach (var c in checkpoints)
-            {
-                Destroy(c.gameObject);
-            }
-
+            ClearMap();
             LoadInTiles(platformInput, hazardInput, checkpointInput);
-
             Debug.Log("Load Completed");
         }
-    }
-
-    private static bool GetLastData(List<string[]> platformInput, List<string[]> hazardInput, List<string[]> checkpointInput)
-    {
-        string filePath = FileEditor.LastPath;
-
-        if (filePath != null)
-        {
-            StreamReader reader = new StreamReader(filePath);// TODO - Let Player choose file using fileEditor script
-
-            string line = "";
-
-            while (!(line = reader.ReadLine()).Contains("|"))
-            {
-                platformInput.Add(line.Split(' '));
-            }
-
-            while (!(line = reader.ReadLine()).Contains("|"))
-            {
-                hazardInput.Add(line.Split(' '));
-            }
-
-            while ((line = reader.ReadLine()) != null)
-            {
-                checkpointInput.Add(line.Split(' '));
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
-    private static bool GetDataFromFile(List<string[]> platformInput, List<string[]> hazardInput, List<string[]> checkpointInput)
-    {
-        string filePath = FileEditor.GetFile();
-
-        if (filePath != null)
-        {
-            StreamReader reader = new StreamReader(filePath);// TODO - Let Player choose file using fileEditor script
-
-            string line = "";
-
-            while (!(line = reader.ReadLine()).Contains("|"))
-            {
-                platformInput.Add(line.Split(' '));
-            }
-
-            while (!(line = reader.ReadLine()).Contains("|"))
-            {
-                hazardInput.Add(line.Split(' '));
-            }
-
-            while ((line = reader.ReadLine()) != null)
-            {
-                checkpointInput.Add(line.Split(' '));
-            }
-
-            return true;
-        }
-
-        return false;
     }
 
     private void LoadInTiles(List<string[]> platformInput, List<string[]> hazardInput, List<string[]> checkpointInput)
@@ -338,6 +233,24 @@ public class LevelConverter: MonoBehaviour
             {
                 backgroundTilemap.SetTile(new Vector3Int(bounds.xMin + x, bounds.yMin + y, 0), backgroundTile);
             }
+        }
+    }
+
+    private void ClearMap()
+    {
+        platformTilemap.ClearAllTiles();
+        hazardTilemap.ClearAllTiles();
+
+        var checkpoints = FindObjectsOfType<Checkpoint>();
+        foreach (var c in checkpoints)
+        {
+            Destroy(c.gameObject);
+        }
+
+        var endpoints = FindObjectsOfType<LevelEnd>();
+        foreach (var e in endpoints)
+        {
+            Destroy(e.gameObject);
         }
     }
 

@@ -44,4 +44,89 @@ public class FileEditor
 
         return null;
     }
+
+    public static bool GetDataFromFile(out List<string[]> platformInput, out List<string[]> hazardInput, out List<string[]> checkpointInput)
+    {
+        platformInput = new List<string[]>();
+        hazardInput = new List<string[]>();
+        checkpointInput = new List<string[]>();
+
+        string filePath = FileEditor.GetFile();
+
+        if (filePath != null)
+        {
+            StreamReader reader = new StreamReader(filePath);
+
+            string line = "";
+
+            while (!(line = reader.ReadLine()).Contains("|"))
+            {
+                platformInput.Add(line.Split(' '));
+            }
+
+            while (!(line = reader.ReadLine()).Contains("|"))
+            {
+                hazardInput.Add(line.Split(' '));
+            }
+
+            while ((line = reader.ReadLine()) != null)
+            {
+                checkpointInput.Add(line.Split(' '));
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public static bool GetLastData(out List<string[]> platformInput, out List<string[]> hazardInput, out List<string[]> checkpointInput)
+    {
+        platformInput = new List<string[]>();
+        hazardInput = new List<string[]>();
+        checkpointInput = new List<string[]>();
+
+        string filePath = LastPath;
+
+        if (filePath != null) // Maybe turn into seperate method as it is getting reused
+        {
+            StreamReader reader = new StreamReader(filePath);
+
+            string line = "";
+
+            while (!(line = reader.ReadLine()).Contains("|"))
+            {
+                platformInput.Add(line.Split(' '));
+            }
+
+            while (!(line = reader.ReadLine()).Contains("|"))
+            {
+                hazardInput.Add(line.Split(' '));
+            }
+
+            while ((line = reader.ReadLine()) != null)
+            {
+                checkpointInput.Add(line.Split(' '));
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public static void SaveString(string output)
+    {
+        string filePath = SetFile();
+
+        if (filePath != null)
+        {
+            StreamWriter writer = new StreamWriter(filePath, false);
+            writer.Write(output);
+            writer.Flush();
+            writer.Close();
+
+            Debug.Log("Save Completed");
+        }
+    }
 }

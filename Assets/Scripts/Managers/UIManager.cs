@@ -18,8 +18,15 @@ public class UIManager : MonoBehaviour
     [SerializeField] GameObject pausePanel = null;
     [SerializeField] TMPro.TextMeshProUGUI completedTimeText = null;
 
+    SceneHandler sceneHandler;
+
     void Awake()
     {
+        sceneHandler = GameObject.FindObjectOfType<SceneHandler>();
+
+        if (sceneHandler == null)
+            sceneHandler = new GameObject("SceneHandler").AddComponent<SceneHandler>();
+
         width = Screen.width;
         height = Screen.height;
         rect = new Rect(10, 10, width - 20, height - 20);
@@ -57,31 +64,12 @@ public class UIManager : MonoBehaviour
         Time.timeScale = 1;
         PlayerHandler.Reset();
 
-        var currentScene = SceneManager.GetActiveScene().name;
-
-        if (currentScene.Contains("LevelLoader"))
-        {
-            Scene playerScene = SceneManager.GetSceneByName("PlayerScene");
-            Scene UIScene = SceneManager.GetSceneByName("UIScene");
-
-            SceneManager.UnloadSceneAsync(playerScene.name);
-            SceneManager.UnloadSceneAsync(UIScene.name);
-
-            GameObject.FindObjectOfType<LevelConverter>().ReloadLevelAndPlay();
-        }
-        else SceneManager.LoadScene(currentScene);
+        sceneHandler.RestartCurrentLevel();
     }
 
     public void ExitLevel()
     {
-        if(SceneManager.GetSceneAt(0).name == "LevelLoader")
-        {
-            SceneManager.LoadScene("LevelLoader");
-        }
-        else
-        {
-            SceneManager.LoadScene("MenuScene");
-        }
+        sceneHandler.ExitLevel();
     }
 
     void OnGUI()
